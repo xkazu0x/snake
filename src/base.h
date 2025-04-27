@@ -114,7 +114,7 @@
 #define STMNT(x) do { x } while(0)
 #define ASSERT_BREAK() (*(int *)0 = 0)
 
-#if ENABLE_DEBUG || _DEBUG
+#if _DEBUG
 #define ASSERT(x) STMNT(if (!(x)) { ASSERT_BREAK(); })
 #else
 #define ASSERT(x)
@@ -236,7 +236,7 @@ internal char *string_from_architecture(architecture_t arch);
 
 internal void _print(char *message, ...);
 
-#if ENABLE_DEBUG || _DEBUG
+#if _DEBUG
 #define print(message, ...) _print(message, ##__VA_ARGS__);
 #else
 #define print(message, ...)

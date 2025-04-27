@@ -270,6 +270,54 @@ operator*=(vec4 &v, f32 s) {
     return(v);
 }
 
+internal inline b32
+operator==(vec2 a, vec2 b) {
+    b32 result = ((a.x == b.x) &&
+                  (a.y == b.y));
+    return(result);
+}
+
+internal inline b32
+operator==(vec3 a, vec3 b) {
+    b32 result = ((a.x == b.x) &&
+                  (a.y == b.y) &&
+                  (a.z == b.z));
+    return(result);
+}
+
+internal inline b32
+operator==(vec4 a, vec4 b) {
+    b32 result = ((a.x == b.x) &&
+                  (a.y == b.y) &&
+                  (a.z == b.z) &&
+                  (a.w == b.w));
+    return(result);
+}
+
+internal inline b32
+operator!=(vec2 a, vec2 b) {
+    b32 result = ((a.x != b.x) &&
+                  (a.y != b.y));
+    return(result);
+}
+
+internal inline b32
+operator!=(vec3 a, vec3 b) {
+    b32 result = ((a.x != b.x) &&
+                  (a.y != b.y) &&
+                  (a.z != b.z));
+    return(result);
+}
+
+internal inline b32
+operator!=(vec4 a, vec4 b) {
+    b32 result = ((a.x != b.x) &&
+                  (a.y != b.y) &&
+                  (a.z != b.z) &&
+                  (a.w != b.w));
+    return(result);
+}
+
 internal inline vec2
 vec_hadamard(vec2 a, vec2 b) {
     vec2 result;

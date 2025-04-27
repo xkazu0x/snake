@@ -125,6 +125,7 @@ internal window_t create_window(char *title, s32 width, s32 height);
 internal void destroy_window(window_t *window);
 internal void update_window_events(window_t *window);
 internal void toggle_window_fullscreen(window_t *window);
+internal void change_window_title(window_t *window, char *title);
 internal window_size_t get_window_size(window_t *window);
 
 internal input_t create_input(window_t *window);

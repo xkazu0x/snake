@@ -78,6 +78,14 @@ internal inline vec2 &operator*=(vec2 &v, f32 s);
 internal inline vec3 &operator*=(vec3 &v, f32 s);
 internal inline vec4 &operator*=(vec4 &v, f32 s);
 
+internal inline b32 operator==(vec2 a, vec2 b);
+internal inline b32 operator==(vec3 a, vec3 b);
+internal inline b32 operator==(vec4 a, vec4 b);
+
+internal inline b32 operator!=(vec2 a, vec2 b);
+internal inline b32 operator!=(vec3 a, vec3 b);
+internal inline b32 operator!=(vec4 a, vec4 b);
+
 internal inline vec2 vec_hadamard(vec2 a, vec2 b);
 internal inline vec3 vec_hadamard(vec3 a, vec3 b);
 internal inline vec4 vec_hadamard(vec4 a, vec4 b);

@@ -73,7 +73,7 @@ create_window(char *title, s32 width, s32 height) {
 
     u32 window_style = WS_OVERLAPPEDWINDOW;
     u32 window_style_ex = 0;
-    
+
     RECT window_rectangle = {};
     window_rectangle.left = 0;
     window_rectangle.right = window_width;
@@ -136,6 +136,12 @@ internal void
 toggle_window_fullscreen(window_t *window) {
     window_win32_t *platform = (window_win32_t *)window->platform;
     win32_toggle_window_fullscreen(platform->window_handle, &platform->window_placement);
+}
+
+internal void
+change_window_title(window_t *window, char *title) {
+    window_win32_t *platform = (window_win32_t *)window->platform;
+    SetWindowTextA(platform->window_handle, title);
 }
 
 internal window_size_t
