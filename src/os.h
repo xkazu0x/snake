@@ -137,7 +137,9 @@ internal void renderer_clear(renderer_t *renderer, vec3 color);
 internal void renderer_present(renderer_t *renderer, window_t *window);
 internal void renderer_draw_pixel(renderer_t *renderer, f32 x, f32 y, vec3 color);
 internal void renderer_draw_pixel(renderer_t *renderer, vec2 position, vec3 color);
+internal void renderer_draw_rect(renderer_t *renderer, f32 x0, f32 y0, f32 x1, f32 y1, vec3 color);
 internal void renderer_draw_rect(renderer_t *renderer, vec2 min, vec2 max, vec3 color);
+internal void renderer_draw_rect(renderer_t *renderer, rect2 rect, vec3 color);
 
 internal s64 get_performance_frequency();
 internal s64 get_performance_counter();

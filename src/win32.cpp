@@ -332,12 +332,19 @@ renderer_clear(renderer_t *renderer, vec3 color) {
 internal void
 renderer_present(renderer_t *renderer, window_t *window) {
     window_win32_t *platform = (window_win32_t *)window->platform;
-    
+
     window_size_t window_size = win32_get_window_size(platform->window_handle);
-    HDC window_device = GetDC(platform->window_handle);
+
+    // TODO(xkazu0x): do we want to calculate the aspect ratio here?
+    f32 display_width = window_size.height*(window_size.width/window_size.height);
+    f32 display_height = window_size.height;
     
+    f32 offset_x = (window_size.width - display_width)/2;
+    f32 offset_y = 0.0f;
+        
+    HDC window_device = GetDC(platform->window_handle);    
     StretchDIBits(window_device,
-                  0, 0, window_size.width, window_size.height,
+                  offset_x, offset_y, display_width, display_height,
                   0, 0, renderer->width, renderer->height,
                   renderer->memory,
                   &platform->bitmap_info,
@@ -374,11 +381,11 @@ renderer_draw_pixel(renderer_t *renderer, vec2 position, vec3 color) {
 }
 
 internal void
-renderer_draw_rect(renderer_t *renderer, vec2 min, vec2 max, vec3 color) {
-    s32 min_x = round_f32_to_s32(min.x);
-    s32 min_y = round_f32_to_s32(min.y);
-    s32 max_x = round_f32_to_s32(max.x);
-    s32 max_y = round_f32_to_s32(max.y);
+renderer_draw_rect(renderer_t *renderer, f32 x0, f32 y0, f32 x1, f32 y1, vec3 color) {
+    s32 min_x = round_f32_to_s32(x0);
+    s32 min_y = round_f32_to_s32(y0);
+    s32 max_x = round_f32_to_s32(x1);
+    s32 max_y = round_f32_to_s32(y1);
 
     if (min_x < 0) min_x = 0;
     if (min_y < 0) min_y = 0;
@@ -399,6 +406,16 @@ renderer_draw_rect(renderer_t *renderer, vec2 min, vec2 max, vec3 color) {
         }
         row += renderer->pitch;
     }
+}
+
+internal void
+renderer_draw_rect(renderer_t *renderer, vec2 min, vec2 max, vec3 color) {
+    renderer_draw_rect(renderer, min.x, min.y, max.x, max.y, color);
+}
+
+internal void
+renderer_draw_rect(renderer_t *renderer, rect2 rect, vec3 color) {
+    renderer_draw_rect(renderer, rect.min.x, rect.min.y, rect.max.x, rect.max.y, color);
 }
 
 internal s64
