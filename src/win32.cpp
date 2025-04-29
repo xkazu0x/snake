@@ -1,3 +1,14 @@
+xinput_get_state_t *xinput_get_state;
+xinput_set_state_t *xinput_set_state;
+
+XINPUT_GET_STATE(_xinput_get_state) {
+    return(ERROR_DEVICE_NOT_CONNECTED);
+}
+
+XINPUT_SET_STATE(_xinput_set_state) {
+    return(ERROR_DEVICE_NOT_CONNECTED);
+}
+
 internal window_size_t
 win32_get_window_size(HWND window) {
     RECT client_rectangle;
@@ -164,7 +175,28 @@ create_input(window_t *window) {
     if (!RegisterRawInputDevices(&raw_input_device, 1, sizeof(raw_input_device))) {
         print("failed to register mouse as raw input device\n");
     }
-
+    
+    HMODULE xinput_library = LoadLibraryA("xinput1_4.dll");
+    if (!xinput_library) {
+        print("failed to load 'xinput1_4.dll'");
+        xinput_library = LoadLibraryA("xinput1_3.dll");
+        if (!xinput_library) {
+            print("failed to load 'xinput1_3.dll'");
+            xinput_library = LoadLibraryA("xinput9_1_0.dll");
+            if (!xinput_library) {
+                print("failed to load 'xinput9_1_0.dll'");
+            }
+        }
+    }
+    
+    if (xinput_library) {
+        WIN32_GET_PROC_ADDR(xinput_get_state, xinput_library, "XInputGetState");
+        WIN32_GET_PROC_ADDR(xinput_set_state, xinput_library, "XInputSetState");
+    } else {
+        xinput_get_state = _xinput_get_state;
+        xinput_set_state = _xinput_set_state;
+    }
+    
     return(input);
 }
 
@@ -177,10 +209,27 @@ input_process_digital_button(digital_button_t *button, b32 down) {
 }
 
 internal void
+input_process_analog_button(analog_button_t *button, f32 threshold, f32 value) {
+    button->value = value;
+    b32 was_down = button->down;
+    button->down = (value >= threshold);
+    button->pressed = !was_down && button->down;
+    button->released = was_down && !button->down;
+}
+
+internal void
+input_process_stick(stick_t *stick, f32 threshold, f32 x, f32 y) {
+    if (abs_f32(x) <= threshold) x = 0.0f;
+    if (abs_f32(y) <= threshold) y = 0.0f;
+    stick->x = x;
+    stick->y = y;
+}
+
+internal void
 update_window_events(window_t *window, input_t *input) {
     window_win32_t *platform = (window_win32_t *)window->platform;
     
-    for (u32 i = 0; i < KEY_MAX; i++) {
+    for (u32 i = 0; i < KEY_COUNT_MAX; i++) {
         input->keyboard[i].pressed = false;
         input->keyboard[i].released = false;
     }
@@ -288,6 +337,42 @@ update_window_events(window_t *window, input_t *input) {
 
     input->mouse.x = mouse_position.x;
     input->mouse.y = mouse_position.y;
+
+    u32 max_gamepad_count = XUSER_MAX_COUNT;
+    if (max_gamepad_count > ARRAY_COUNT(input->gamepads)) {
+        max_gamepad_count = ARRAY_COUNT(input->gamepads);
+    }
+    
+    for (u32 gamepad_index = 0;
+         gamepad_index < max_gamepad_count;
+         ++gamepad_index) {
+        XINPUT_STATE xinput_state = {};
+        DWORD xinput_result = xinput_get_state(gamepad_index, &xinput_state);
+        if (xinput_result == ERROR_SUCCESS) {
+            input_process_digital_button(&input->gamepads[gamepad_index].up, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].down, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].left, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].right, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].start, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].back, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].left_thumb,(xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].right_thumb, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].left_shoulder, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].right_shoulder, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].a, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].b, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].x, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0);
+            input_process_digital_button(&input->gamepads[gamepad_index].y, (xinput_state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0);
+            input_process_analog_button(&input->gamepads[gamepad_index].left_trigger, XINPUT_GAMEPAD_TRIGGER_THRESHOLD/255.0f, xinput_state.Gamepad.bLeftTrigger/255.0f);
+            input_process_analog_button(&input->gamepads[gamepad_index].right_trigger, XINPUT_GAMEPAD_TRIGGER_THRESHOLD/255.0f, xinput_state.Gamepad.bRightTrigger/255.0f);
+#define CONVERT(x) (2.0f * (((x + 32768) / 65535.0f) - 0.5f))
+            input_process_stick(&input->gamepads[gamepad_index].left_stick, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE/32767.0f, CONVERT(xinput_state.Gamepad.sThumbLX), CONVERT(xinput_state.Gamepad.sThumbLY));
+            input_process_stick(&input->gamepads[gamepad_index].right_stick, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE/32767.0f, CONVERT(xinput_state.Gamepad.sThumbRX), CONVERT(xinput_state.Gamepad.sThumbRY));
+#undef CONVERT
+        } else {
+            break;
+        }
+    }
 }
 
 internal renderer_t
@@ -308,7 +393,7 @@ create_renderer(window_t *window, s32 width, s32 height) {
     platform->bitmap_info.bmiHeader.biCompression = BI_RGB;
 
     s32 renderer_memory_size = (renderer.width*renderer.height)*renderer.bytes_per_pixel;
-    renderer.memory = VirtualAlloc(0, renderer_memory_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    renderer.buffer = VirtualAlloc(0, renderer_memory_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
     return(renderer);
 }
@@ -319,7 +404,7 @@ renderer_clear(renderer_t *renderer, vec3 color) {
                      (round_f32_to_u32(color.g * 255.0f) << 8) |
                      (round_f32_to_u32(color.b * 255.0f) << 0));
     
-    u8 *row = (u8 *)renderer->memory;
+    u8 *row = (u8 *)renderer->buffer;
     for (s32 y = 0; y < renderer->height; ++y) {
         u32 *pixel = (u32 *)row;
         for (s32 x = 0; x < renderer->width; ++x) {
@@ -346,7 +431,7 @@ renderer_present(renderer_t *renderer, window_t *window) {
     StretchDIBits(window_device,
                   offset_x, offset_y, display_width, display_height,
                   0, 0, renderer->width, renderer->height,
-                  renderer->memory,
+                  renderer->buffer,
                   &platform->bitmap_info,
                   DIB_RGB_COLORS, SRCCOPY);
     
@@ -368,7 +453,7 @@ renderer_draw_pixel(renderer_t *renderer, f32 x, f32 y, vec3 color) {
                      (round_f32_to_u32(color.g * 255.0f) << 8) |
                      (round_f32_to_u32(color.b * 255.0f) << 0));
 
-    u8 *row = ((u8 *)renderer->memory +
+    u8 *row = ((u8 *)renderer->buffer +
                (offset_x * renderer->bytes_per_pixel) +
                (offset_y * renderer->pitch));
     u32 *pixel = (u32 *)row;
@@ -396,7 +481,7 @@ renderer_draw_rect(renderer_t *renderer, f32 x0, f32 y0, f32 x1, f32 y1, vec3 co
                      (round_f32_to_u32(color.g * 255.0f) << 8) |
                      (round_f32_to_u32(color.b * 255.0f) << 0));
 
-    u8 *row = ((u8 *)renderer->memory +
+    u8 *row = ((u8 *)renderer->buffer +
                (min_x * renderer->bytes_per_pixel) +
                (min_y * renderer->pitch));
     for (s32 y = min_y; y < max_y; ++y) {

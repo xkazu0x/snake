@@ -8,6 +8,15 @@
 
 #include <time.h>
 
+// TODO(xkazu0x):
+// fixed frame rate
+// snake smooth movement
+// snake animation
+// draw bitmaps
+
+// TODO(xkazu0x):
+// resize renderer
+
 #define SCALE 4
 
 #define GRID_CELL_COUNT 8
@@ -44,13 +53,15 @@ int main(void) {
     renderer_t renderer = create_renderer(&window, WINDOW_WIDTH, WINDOW_HEIGHT);
     input_t input = create_input(&window);
 
+    gamepad_t *gamepad = &input.gamepads[0];
+    
     u32 snake_body_count = 0;
     vec2 snake_body[SNAKE_BODY_COUNT];
     memset(&snake_body, 0, SNAKE_BODY_COUNT*sizeof(vec2));
 
     vec2 snake_head = make_vec2(GRID_CELL_COUNT/2);
     vec2 snake_delta = make_vec2(0.0f);
-
+    
     vec3 snake_head_color = make_rgb(115, 129, 123);
     vec3 snake_body_color = make_rgb(98, 105, 106);
     
@@ -77,10 +88,13 @@ int main(void) {
             window.should_quit = true;
             break;
         }
+        
         if (input.keyboard[KEY_F11].pressed) {
             toggle_window_fullscreen(&window);
         }
-        if (input.keyboard[KEY_SPACE].pressed) {
+        
+        if (input.keyboard[KEY_SPACE].pressed ||
+            gamepad->start.pressed) {
             pause = !pause;
         }
         
@@ -111,6 +125,16 @@ int main(void) {
                 if (input.keyboard[KEY_LEFT].down)  new_snake_state = SNAKE_STATE_LEFT;
                 if (input.keyboard[KEY_RIGHT].down) new_snake_state = SNAKE_STATE_RIGHT;
 
+                if (gamepad->up.down)    new_snake_state = SNAKE_STATE_UP;
+                if (gamepad->down.down)  new_snake_state = SNAKE_STATE_DOWN;
+                if (gamepad->left.down)  new_snake_state = SNAKE_STATE_LEFT;
+                if (gamepad->right.down) new_snake_state = SNAKE_STATE_RIGHT;
+
+                if (gamepad->left_stick.y > 0.0f) new_snake_state = SNAKE_STATE_UP;
+                if (gamepad->left_stick.y < 0.0f) new_snake_state = SNAKE_STATE_DOWN;
+                if (gamepad->left_stick.x < 0.0f) new_snake_state = SNAKE_STATE_LEFT;
+                if (gamepad->left_stick.x > 0.0f) new_snake_state = SNAKE_STATE_RIGHT;
+                
                 ms_counter += ms_per_frame;
                 if (ms_counter - last_update > ms_update) {
                     switch (new_snake_state) {
@@ -202,12 +226,13 @@ int main(void) {
                     }
                     last_update = ms_counter;
                 }
-                if (input.keyboard[KEY_ENTER].pressed) {
+                if (input.keyboard[KEY_ENTER].pressed ||
+                    gamepad->a.pressed) {
                     snake_body_count = 0;
                    
                     snake_head = make_vec2(GRID_CELL_COUNT/2);
                     snake_delta = make_vec2(0.0f);
-
+                    
                     berry_pos = make_vec2(rand() % GRID_CELL_COUNT, rand() % GRID_CELL_COUNT);
                     lose = false;
                 }

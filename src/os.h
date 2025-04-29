@@ -75,13 +75,46 @@ enum key_code_t {
     KEY_F23 = 0x86,
     KEY_F24 = 0x87,
     
-    KEY_MAX = 256,
+    KEY_COUNT_MAX = 0xFF,
 };
 
 struct digital_button_t {
     b32 down;
     b32 pressed;
     b32 released;
+};
+
+struct analog_button_t {
+    f32 value;
+    b32 down;
+    b32 pressed;
+    b32 released;
+};
+
+struct stick_t {
+    f32 x;
+    f32 y;
+};
+
+struct gamepad_t {
+    digital_button_t up;
+    digital_button_t down;
+    digital_button_t left;
+    digital_button_t right;
+    digital_button_t start;
+    digital_button_t back;
+    digital_button_t left_thumb;
+    digital_button_t right_thumb;
+    digital_button_t left_shoulder;
+    digital_button_t right_shoulder;
+    digital_button_t a;
+    digital_button_t b;
+    digital_button_t x;
+    digital_button_t y;
+    analog_button_t left_trigger;
+    analog_button_t right_trigger;
+    stick_t left_stick;
+    stick_t right_stick;
 };
 
 struct mouse_t {
@@ -98,8 +131,11 @@ struct mouse_t {
     s32 dy;
 };
 
+#define GAMEPAD_COUNT_MAX 4
+
 struct input_t {
-    digital_button_t keyboard[KEY_MAX];
+    digital_button_t keyboard[KEY_COUNT_MAX];
+    gamepad_t gamepads[GAMEPAD_COUNT_MAX];
     mouse_t mouse;
 };
 
@@ -118,7 +154,7 @@ struct renderer_t {
     s32 height;
     s32 bytes_per_pixel;
     s32 pitch;
-    void *memory;
+    void *buffer;
 };
 
 internal window_t create_window(char *title, s32 width, s32 height);
@@ -130,6 +166,8 @@ internal window_size_t get_window_size(window_t *window);
 
 internal input_t create_input(window_t *window);
 internal void input_process_digital_button(digital_button_t *button, b32 down);
+internal void input_process_analog_button(analog_button_t *button, f32 threshold, f32 value);
+internal void input_process_stick(stick_t *stick, f32 threshold, f32 x, f32 y);
 internal void update_window_events(window_t *window, input_t *input);
 
 internal renderer_t create_renderer(window_t *window, s32 width, s32 height);
