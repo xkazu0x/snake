@@ -157,6 +157,14 @@ struct renderer_t {
     void *buffer;
 };
 
+struct monitor_info_t {
+    s32 width;
+    s32 height;
+    s32 refresh_rate;
+};
+
+internal monitor_info_t get_monitor_info(void);
+
 internal window_t create_window(char *title, s32 width, s32 height);
 internal void destroy_window(window_t *window);
 internal void update_window_events(window_t *window);
@@ -179,8 +187,9 @@ internal void renderer_draw_rect(renderer_t *renderer, f32 x0, f32 y0, f32 x1, f
 internal void renderer_draw_rect(renderer_t *renderer, vec2 min, vec2 max, vec3 color);
 internal void renderer_draw_rect(renderer_t *renderer, rect2 rect, vec3 color);
 
-internal s64 get_performance_frequency();
-internal s64 get_performance_counter();
+internal b32 is_sleep_granular(u32 period);
+internal s64 get_performance_frequency(void);
+internal s64 get_performance_counter(void);
 internal void sleep(u32 ms);
 
 #endif // OS_H

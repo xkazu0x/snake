@@ -60,6 +60,20 @@ win32_window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     return(result);
 }
 
+internal monitor_info_t
+get_monitor_info(void) {
+    DEVMODE monitor_info;
+    monitor_info.dmSize = sizeof(DEVMODE);
+    EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &monitor_info);
+
+    monitor_info_t result;
+    result.width = monitor_info.dmPelsWidth;
+    result.height = monitor_info.dmPelsHeight;
+    result.refresh_rate = monitor_info.dmDisplayFrequency;
+
+    return(result);
+}
+
 internal window_t
 create_window(char *title, s32 width, s32 height) {
     window_t window = {};
@@ -68,19 +82,13 @@ create_window(char *title, s32 width, s32 height) {
     window_win32_t *platform = (window_win32_t *)window.platform;
     platform->window_instance = GetModuleHandleA(0);
     
-    DEVMODE monitor_info;
-    monitor_info.dmSize = sizeof(DEVMODE);
-    EnumDisplaySettings(0, ENUM_CURRENT_SETTINGS, &monitor_info);
+    monitor_info_t monitor = get_monitor_info();
     
-    s32 monitor_width = monitor_info.dmPelsWidth;
-    s32 monitor_height = monitor_info.dmPelsHeight;
-    s32 monitor_refresh_rate = monitor_info.dmDisplayFrequency;
-
     char *window_title = title;
     s32 window_width = width;
     s32 window_height = height;
-    s32 window_x = (monitor_width - window_width)/2;
-    s32 window_y = (monitor_height - window_height)/2;
+    s32 window_x = (monitor.width - window_width)/2;
+    s32 window_y = (monitor.height - window_height)/2;
 
     u32 window_style = WS_OVERLAPPEDWINDOW;
     u32 window_style_ex = 0;
@@ -421,15 +429,15 @@ renderer_present(renderer_t *renderer, window_t *window) {
     window_size_t window_size = win32_get_window_size(platform->window_handle);
 
     // TODO(xkazu0x): do we want to calculate the aspect ratio here?
-    f32 display_width = window_size.height*(window_size.width/window_size.height);
-    f32 display_height = window_size.height;
+    //f32 display_width = window_size.height*(window_size.width/window_size.height);
+    //f32 display_height = window_size.height;
     
-    f32 offset_x = (window_size.width - display_width)/2;
-    f32 offset_y = 0.0f;
+    //f32 offset_x = (window_size.width - display_width)/2;
+    //f32 offset_y = 0.0f;
         
     HDC window_device = GetDC(platform->window_handle);    
     StretchDIBits(window_device,
-                  offset_x, offset_y, display_width, display_height,
+                  0, 0, window_size.width, window_size.height,
                   0, 0, renderer->width, renderer->height,
                   renderer->buffer,
                   &platform->bitmap_info,
@@ -503,15 +511,21 @@ renderer_draw_rect(renderer_t *renderer, rect2 rect, vec3 color) {
     renderer_draw_rect(renderer, rect.min.x, rect.min.y, rect.max.x, rect.max.y, color);
 }
 
+internal b32
+is_sleep_granular(u32 period) {
+    b32 result = (timeBeginPeriod(period) == TIMERR_NOERROR);
+    return(result);
+}
+
 internal s64
-get_performance_frequency() {
+get_performance_frequency(void) {
     LARGE_INTEGER large_integer;
     QueryPerformanceFrequency(&large_integer);
     return(large_integer.QuadPart);
 }
 
 internal s64
-get_performance_counter() {
+get_performance_counter(void) {
     LARGE_INTEGER result;
     QueryPerformanceCounter(&result);
     return(result.QuadPart);

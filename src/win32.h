@@ -5,6 +5,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <timeapi.h>
 #include <xinput.h>
 
 struct window_win32_t {

@@ -1,7 +1,7 @@
 CC := g++
 CFLAGS := -O0 -g -Wextra -Wall -Wno-write-strings -Wno-unused-function -Wno-unused-variable
 DEFINES := -D_DEBUG=1
-LIBS := -luser32 -lgdi32
+LIBS := -luser32 -lgdi32 -lwinmm
 
 RES_DIR := res
 SRC_DIR := src
